@@ -1,0 +1,6 @@
+@UserTaskManagementAPI_HostAddress = http://localhost:5029
+
+GET {{UserTaskManagementAPI_HostAddress}}/
+Accept: application/json
+
+###
