@@ -30,9 +30,17 @@ public class TaskItemService : ITaskItemService
         return Result.Success(taskItemResult.Value);
     }
 
-    public async Task<List<TaskItem>> GetAllAsync()
+    public async Task<List<TaskItem>> GetAllAsync(Guid userId, string role, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.TaskItems.AsNoTracking().ToListAsync();
+        var query = _dbContext.TaskItems.AsQueryable();
+
+        if (!role.Equals("admin", StringComparison.CurrentCultureIgnoreCase))
+        {
+            query = query.Where(t => t.CreatedByUserId == userId);
+        }
+
+
+        return await query.AsNoTracking().ToListAsync(cancellationToken);
     }
 
     public async Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

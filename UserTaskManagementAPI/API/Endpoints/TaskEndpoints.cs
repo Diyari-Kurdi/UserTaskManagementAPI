@@ -2,6 +2,7 @@
 using UserTaskManagementAPI.Abstractions;
 using UserTaskManagementAPI.Application.DTOs;
 using UserTaskManagementAPI.Application.Requests;
+using UserTaskManagementAPI.Domain.Entities;
 using UserTaskManagementAPI.Domain.Enums;
 
 namespace UserTaskManagementAPI.API.Endpoints;
@@ -12,11 +13,10 @@ public static class TaskEndpoints
     {
         var group = app.MapGroup("/api/tasks/").RequireAuthorization();
 
-
         group.MapGet("", async (ClaimsPrincipal user,
                                 ITaskItemService taskService,
-                                int pageNumber,
-                                int pageSize,
+                                int? pageNumber,
+                                int? pageSize,
                                 bool? isCompleted,
                                 string? tag,
                                 string? search,
@@ -27,13 +27,20 @@ public static class TaskEndpoints
             var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var role = user.FindFirstValue(ClaimTypes.Role)!;
 
-            var filter = new TaskItemFilterDto(pageNumber, pageSize, isCompleted, tag, search, priority, sortByPriority);
+            List<TaskItem> items = [];
+            if (pageNumber.HasValue && pageSize.HasValue)
+            {
+                var filter = new TaskItemFilterDto(pageNumber.Value, pageSize.Value, isCompleted, tag, search, priority, sortByPriority);
 
-            var items = await taskService.GetFilteredAsync(userId,
-                                                           role,
-                                                           filter,
-                                                           cancellationToken);
-
+                items = await taskService.GetFilteredAsync(userId,
+                                                               role,
+                                                               filter,
+                                                               cancellationToken);
+            }
+            else
+            {
+                items = await taskService.GetAllAsync(userId, role, cancellationToken);
+            }
             return Results.Ok(items);
         });
 

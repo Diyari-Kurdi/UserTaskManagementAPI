@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
-using System.Diagnostics;
 using System.Text.Json.Serialization;
 using UserTaskManagementAPI.Abstractions;
 using UserTaskManagementAPI.API.Endpoints;
