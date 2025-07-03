@@ -99,7 +99,7 @@ GET /api/tasks?pageNumber=1&pageSize=10&isCompleted=false&tag=work&priority=High
    ```
 
 2. **Configure PostgreSQL connection**
-   - See the [configuration](https://github.com/Diyari-Kurdi/UserTaskManagementAPI/edit/master/README.md#configuration) section below.
+   - See the [configuration](https://github.com/Diyari-Kurdi/UserTaskManagementAPI?tab=readme-ov-file#configuration) section below.
 
 3. **Install EF Core CLI tool (if not already installed)**
    ```bash
