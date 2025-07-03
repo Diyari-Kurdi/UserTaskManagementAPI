@@ -87,6 +87,10 @@ public class TaskItemService : ITaskItemService
                 query = query.OrderBy(t => t.Priority);
             }
         }
+        else
+        {
+            query = query.OrderBy(t => t.Id);
+        }
 
         var items = await query
             .Skip((taskItemFilter.PageNumber - 1) * taskItemFilter.PageSize)

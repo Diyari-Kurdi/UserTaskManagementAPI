@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 using UserTaskManagementAPI.Abstractions;
 using UserTaskManagementAPI.API.Endpoints;
 using UserTaskManagementAPI.API.Extensions;
@@ -13,7 +15,7 @@ namespace UserTaskManagementAPI;
 
 public class Program
 {
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         var configuration = builder.Configuration;
@@ -24,6 +26,10 @@ public class Program
         builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
+        builder.Services.Configure<JsonOptions>(options =>
+        {
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
 
 
         builder.Services.AddJwtAuthentication(configuration);
@@ -84,14 +90,6 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
-
-
-        //using (var scope = app.Services.CreateScope())
-        //{
-        //    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        //    await dbContext.Database.EnsureDeletedAsync();
-        //    await dbContext.Database.EnsureCreatedAsync();
-        //}
 
         app.MapTaskEndpoints();
         app.MapUserEndpoints();
