@@ -11,5 +11,6 @@ public interface ITaskItemService
     Task<List<TaskItem>> GetAllAsync(Guid userId, string role, CancellationToken cancellationToken = default);
     Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<List<TaskItem>> GetFilteredAsync(Guid userId, string role, TaskItemFilterDto taskItemFilter, CancellationToken cancellationToken = default);
+    Task<List<TaskItem>> GetFilteredWithPagingAsync(Guid userId, string role, int pageNumber, int pageSize, TaskItemFilterDto taskItemFilter, CancellationToken cancellationToken = default);
     Task<TaskItem> UpdateAsync(TaskItem task, UpdateTaskRequest request, CancellationToken cancellationToken = default);
 }

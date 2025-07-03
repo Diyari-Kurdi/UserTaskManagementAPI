@@ -14,28 +14,38 @@ public static class TaskEndpoints
         var group = app.MapGroup("/api/tasks/").RequireAuthorization();
 
         group.MapGet("", async (ClaimsPrincipal user,
-                                ITaskItemService taskService,
-                                int? pageNumber,
-                                int? pageSize,
-                                bool? isCompleted,
-                                string? tag,
-                                string? search,
-                                TaskPriority? priority,
-                                SortType? sortByPriority,
-                                CancellationToken cancellationToken) =>
+                        ITaskItemService taskService,
+                        int? pageNumber,
+                        int? pageSize,
+                        bool? isCompleted,
+                        string? tag,
+                        string? search,
+                        TaskPriority? priority,
+                        SortType? sortByPriority,
+                        CancellationToken cancellationToken) =>
         {
             var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var role = user.FindFirstValue(ClaimTypes.Role)!;
 
             List<TaskItem> items = [];
+            var filter = new TaskItemFilterDto(isCompleted, tag, search, priority, sortByPriority);
+
+            if (pageNumber.HasValue ^ pageSize.HasValue)
+            {
+                return Results.BadRequest("Both pageNumber and pageSize must be provided together for pagination.");
+            }
+
             if (pageNumber.HasValue && pageSize.HasValue)
             {
-                var filter = new TaskItemFilterDto(pageNumber.Value, pageSize.Value, isCompleted, tag, search, priority, sortByPriority);
-
-                items = await taskService.GetFilteredAsync(userId,
-                                                               role,
-                                                               filter,
-                                                               cancellationToken);
+                items = await taskService.GetFilteredWithPagingAsync(userId, role, pageNumber.Value, pageSize.Value, filter, cancellationToken);
+            }
+            else if (isCompleted.HasValue
+                    || !string.IsNullOrWhiteSpace(tag)
+                    || !string.IsNullOrWhiteSpace(search)
+                    || priority.HasValue
+                    || sortByPriority.HasValue)
+            {
+                items = await taskService.GetFilteredAsync(userId, role, filter, cancellationToken);
             }
             else
             {
@@ -66,11 +76,12 @@ public static class TaskEndpoints
 
             var task = await taskService.GetByIdAsync(id, cancellationToken);
 
-            if (!role.Equals("admin", StringComparison.CurrentCultureIgnoreCase) && task?.CreatedByUserId != userId)
-                return Results.Forbid();
 
             if (task == null)
                 return Results.NotFound();
+
+            if (!role.Equals("admin", StringComparison.CurrentCultureIgnoreCase) && task.CreatedByUserId != userId)
+                return Results.Forbid();
 
 
             var updated = await taskService.UpdateAsync(task, request, cancellationToken);

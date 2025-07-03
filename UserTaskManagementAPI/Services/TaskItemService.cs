@@ -44,16 +44,33 @@ public class TaskItemService : ITaskItemService
     }
 
     public async Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    { 
+        return await _dbContext.TaskItems.Where(t => t.Id == id).AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<List<TaskItem>> GetFilteredWithPagingAsync(Guid userId,
+                                                                 string role,
+                                                                 int pageNumber,
+                                                                 int pageSize,
+                                                                 TaskItemFilterDto taskItemFilter,
+                                                                 CancellationToken cancellationToken = default)
     {
-        return await _dbContext.TaskItems.Where(t => t.Id == id)
-                                         .AsNoTracking()
-                                         .FirstOrDefaultAsync(cancellationToken);
+        return await BuildFilteredQuery(userId, role, taskItemFilter)
+                          .Skip((pageNumber - 1) * pageSize)
+                          .Take(pageSize)
+                          .AsNoTracking()
+                          .ToListAsync(cancellationToken);
     }
 
     public async Task<List<TaskItem>> GetFilteredAsync(Guid userId,
-                                                          string role,
-                                                          TaskItemFilterDto taskItemFilter,
-                                                          CancellationToken cancellationToken = default)
+                                                       string role,
+                                                       TaskItemFilterDto taskItemFilter,
+                                                       CancellationToken cancellationToken = default)
+    {
+        return await BuildFilteredQuery(userId, role, taskItemFilter).AsNoTracking().ToListAsync(cancellationToken);
+    }
+
+    private IQueryable<TaskItem> BuildFilteredQuery(Guid userId, string role, TaskItemFilterDto filter)
     {
         var query = _dbContext.TaskItems.AsQueryable();
 
@@ -62,51 +79,38 @@ public class TaskItemService : ITaskItemService
             query = query.Where(t => t.CreatedByUserId == userId);
         }
 
-        if (taskItemFilter.IsCompleted.HasValue)
+        if (filter.IsCompleted.HasValue)
         {
-            query = query.Where(t => t.IsCompleted == taskItemFilter.IsCompleted.Value);
+            query = query.Where(t => t.IsCompleted == filter.IsCompleted.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(taskItemFilter.Tag))
+        if (!string.IsNullOrWhiteSpace(filter.Tag))
         {
-            query = query.Where(t => t.Tags.Contains(taskItemFilter.Tag));
+            query = query.Where(t => t.Tags.Contains(filter.Tag));
         }
 
-        if (!string.IsNullOrWhiteSpace(taskItemFilter.Search))
+        if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            query = query
-                .Where(t => t.Title.Contains(taskItemFilter.Search) || (t.Description != null && t.Description.Contains(taskItemFilter.Search)));
+            query = query.Where(t => t.Title.Contains(filter.Search)
+                                  || (t.Description != null && t.Description.Contains(filter.Search)));
+        }
+        if (filter.Priority.HasValue)
+        {
+            query = query.Where(t => t.Priority == filter.Priority);
         }
 
-        if (taskItemFilter.Priority.HasValue)
+        if (filter.SortByPriority.HasValue)
         {
-            query = query
-                .Where(t => t.Priority == taskItemFilter.Priority);
-        }
-
-        if (taskItemFilter.SortByPriority.HasValue)
-        {
-            if (taskItemFilter.SortByPriority == Domain.Enums.SortType.Descending)
-            {
-                query = query.OrderByDescending(t => t.Priority);
-            }
-            else
-            {
-                query = query.OrderBy(t => t.Priority);
-            }
+            query = filter.SortByPriority == Domain.Enums.SortType.Descending
+                ? query.OrderByDescending(t => t.Priority)
+                : query.OrderBy(t => t.Priority);
         }
         else
         {
             query = query.OrderBy(t => t.Id);
         }
 
-        var items = await query
-            .Skip((taskItemFilter.PageNumber - 1) * taskItemFilter.PageSize)
-            .Take(taskItemFilter.PageSize)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        return items;
+        return query;
     }
 
     public async Task<TaskItem> UpdateAsync(TaskItem task, UpdateTaskRequest request, CancellationToken cancellationToken = default)

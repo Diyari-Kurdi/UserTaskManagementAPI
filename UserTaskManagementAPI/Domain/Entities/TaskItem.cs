@@ -36,21 +36,30 @@ public sealed class TaskItem
                                           TaskPriority priority,
                                           Guid createdByUserId)
     {
-        if (createdByUserId == Guid.Empty)
+        if (!IsUserIdValid(createdByUserId))
         {
             return Result.Failure<TaskItem>(TaskItemErrors.InvalidUserId);
         }
 
-        if (title.Length < TaskItemRules.MinTitleLength || title.Length > TaskItemRules.MaxTitleLength)
+        if (!IsTitleValid(title))
         {
             return Result.Failure<TaskItem>(TaskItemErrors.InvalidTitleLength);
         }
 
-        if (description?.Length > TaskItemRules.MaxDescriptionLength)
+        if (!IsDescriptionValid(description))
         {
             return Result.Failure<TaskItem>(TaskItemErrors.DescriptionTooLong);
         }
 
         return Result.Success(new TaskItem(title, description, tags, priority, createdByUserId));
     }
+
+    private static bool IsUserIdValid(Guid id) => id != Guid.Empty;
+
+    private static bool IsTitleValid(string title) =>
+        title.Length >= TaskItemRules.MinTitleLength &&
+        title.Length <= TaskItemRules.MaxTitleLength;
+
+    private static bool IsDescriptionValid(string? desc) =>
+        desc == null || desc.Length <= TaskItemRules.MaxDescriptionLength;
 }

@@ -23,21 +23,29 @@ public sealed class User
 
     public static Result<User> Create(string username, string passwordHash, string role)
     {
-        if (username.Length < UserRules.MinUsernameLength || username.Length > UserRules.MaxUsernameLength)
+        if (!IsUsernameValid(username))
         {
             return Result.Failure<User>(UserErrors.InvalidUsernameLength);
         }
-
-        if (string.IsNullOrWhiteSpace(passwordHash))
+        if (!IsPasswordHashValid(passwordHash))
         {
             return Result.Failure<User>(UserErrors.EmptyPasswordHash);
         }
-
-        if (!role.Equals("admin", StringComparison.CurrentCultureIgnoreCase) && !role.Equals("user", StringComparison.CurrentCultureIgnoreCase))
+        if (!IsRoleValid(role))
         {
             return Result.Failure<User>(UserErrors.InvalidRole);
         }
 
         return Result.Success(new User(username, passwordHash, role));
     }
+
+    private static bool IsUsernameValid(string username) =>
+        username.Length >= UserRules.MinUsernameLength && username.Length <= UserRules.MaxUsernameLength;
+
+    private static bool IsPasswordHashValid(string hash) =>
+        !string.IsNullOrWhiteSpace(hash);
+
+    private static bool IsRoleValid(string role) =>
+        role.Equals("admin", StringComparison.CurrentCultureIgnoreCase) ||
+        role.Equals("user", StringComparison.CurrentCultureIgnoreCase);
 }
